@@ -34,10 +34,10 @@ export async function POST(request: Request) {
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o",
-      messages
+      messages: messages as OpenAI.Chat.ChatCompletionMessageParam[]
     });
 
-    let assistantResponse = completion.choices[0]?.message.content ?? '';
+    let assistantResponse = completion.choices[0]?.message?.content ?? '';
 
     const sqlRegex = /\[SQL\]([\s\S]*?)\[\/SQL\]/;
     const sqlQuery = sqlRegex.exec(assistantResponse)?.[1]?.trim();
