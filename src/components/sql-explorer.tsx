@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -11,6 +11,7 @@ import { format, isValid, parseISO } from 'date-fns'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+// import { useMediaQuery } from '@/hooks/use-media-query'
 
 type ColumnDef = {
   name: string
@@ -254,7 +255,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }: {
         disabled={currentPage === 1}
         variant="outline"
         size="sm"
-        className="bg-black text-white hover:bg-blue-600 transition-colors duration-300"
+        className="bg-black text-white hover:bg-blue-600 hover:text-white transition-colors duration-300"
       >
         <ChevronLeft className="h-4 w-4 mr-2" />
         Previous
@@ -267,7 +268,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }: {
         disabled={currentPage === totalPages}
         variant="outline"
         size="sm"
-        className="bg-black text-white hover:bg-blue-600 transition-colors duration-300"
+        className="bg-black text-white hover:bg-blue-600 hover:text-white transition-colors duration-300"
       >
         Next
         <ChevronRight className="h-4 w-4 ml-2" />
@@ -290,6 +291,14 @@ export default function SQLExplorer() {
   const [chatInput, setChatInput] = useState<string>('');
   const [isChatLoading, setIsChatLoading] = useState<boolean>(false);
   const [isResultsModalOpen, setIsResultsModalOpen] = useState<boolean>(false);
+  //  const isMobile = useMediaQuery('(max-width: 640px)')
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
+  }, [chatMessages]);
 
   const executeQuery = async () => {
     setIsLoading(true);
@@ -480,43 +489,46 @@ export default function SQLExplorer() {
 
   return (
     <div className="container mx-auto p-4 space-y-8 max-w-4xl bg-white rounded-lg shadow-lg">
-      <h1 className="text-4xl font-bold mb-6 text-center text-blue-800">
+      <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-center text-blue-800">
         Robert&apos;s SQL Playground
       </h1>
 
       {/* Example Queries Section */}
-      <section className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md">
-        <h2 className="text-2xl font-semibold text-center text-gray-800">Robert&apos;s Example Queries</h2>
-        <div className="flex flex-wrap justify-center gap-2">
-          {predefinedQueries.map((pq, index) => (
-            <TooltipProvider key={index}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    onClick={() => setUserQuery(formatSQL(pq.query))}
-                    variant="outline"
-                    className="text-sm bg-black text-white hover:bg-blue-600 transition-colors duration-300"
-                  >
-                    {pq.name}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <pre className="text-xs">{pq.query}</pre>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          ))}
-        </div>
+      <section className="space-y-4 bg-gray-50 p-4 sm:p-6 rounded-lg shadow-md">
+        <h2 className="text-xl sm:text-2xl font-semibold text-center text-gray-800">Robert&apos;s Example Queries</h2>
+        <ScrollArea className="h-[150px] sm:h-auto">
+          <div className="flex flex-wrap justify-center gap-2">
+            {predefinedQueries.map((pq, index) => (
+              <TooltipProvider key={index}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={() => setUserQuery(formatSQL(pq.query))}
+                      variant="outline"
+                      className="text-xs sm:text-sm bg-black text-white hover:bg-blue-600 hover:text-white transition-colors duration-300"
+                      aria-label={`Load example query: ${pq.name}`}
+                    >
+                      {pq.name}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <pre className="text-xs">{pq.query}</pre>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
+          </div>
+        </ScrollArea>
       </section>
 
       {/* Natural Language Query Section */}
-      <section className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md">
+      <section className="space-y-4 bg-gray-50 p-4 sm:p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-center space-x-2">
-          <h2 className="text-2xl font-semibold text-gray-800">Generate an SQL Query from a Natural Language Question</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">Generate SQL Query</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-5 w-5 text-blue-500 cursor-help" />
+                <Info className="h-5 w-5 text-blue-500 cursor-help" aria-label="Information about generating SQL queries" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs">
@@ -534,12 +546,18 @@ export default function SQLExplorer() {
             onChange={(e) => setUserQuestion(e.target.value)}
             placeholder="Ask a question about the database..."
             className="min-h-[100px] w-full border-2 border-blue-200 focus:border-blue-400 transition-colors duration-300"
+            aria-label="Enter your question about the database"
           />
           <div className="flex justify-center">
-            <Button onClick={generateQueryFromQuestion} disabled={isGeneratingQuery} className="bg-black text-white hover:bg-blue-600 transition-colors duration-300">
+            <Button
+              onClick={generateQueryFromQuestion}
+              disabled={isGeneratingQuery}
+              className="bg-black text-white hover:bg-blue-600 hover:text-white transition-colors duration-300"
+              aria-label="Generate SQL query from question"
+            >
               {isGeneratingQuery ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                   Generating Query...
                 </>
               ) : (
@@ -551,13 +569,13 @@ export default function SQLExplorer() {
       </section>
 
       {/* SQL Query Execution Section */}
-      <section className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md">
+      <section className="space-y-4 bg-gray-50 p-4 sm:p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-center space-x-2">
-          <h2 className="text-2xl font-semibold text-gray-800">Execute an SQL Query</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-gray-800">Execute SQL Query</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-5 w-5 text-blue-500 cursor-help" />
+                <Info className="h-5 w-5 text-blue-500 cursor-help" aria-label="Information about executing SQL queries" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs">
@@ -573,12 +591,18 @@ export default function SQLExplorer() {
             onChange={(e) => setUserQuery(e.target.value)}
             placeholder="Enter your SQL query here..."
             className="min-h-[100px] w-full font-mono border-2 border-blue-200 focus:border-blue-400 transition-colors duration-300"
+            aria-label="Enter your SQL query"
           />
           <div className="flex justify-center">
-            <Button onClick={executeQuery} disabled={isLoading} className="bg-black text-white hover:bg-blue-600 transition-colors duration-300">
+            <Button
+              onClick={executeQuery}
+              disabled={isLoading}
+              className="bg-black text-white hover:bg-blue-600 hover:text-white transition-colors duration-300"
+              aria-label="Execute SQL query"
+            >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" aria-hidden="true" />
                   Executing...
                 </>
               ) : (
@@ -591,8 +615,8 @@ export default function SQLExplorer() {
 
       {/* Error Alert */}
       {error && (
-        <Alert variant="destructive" className="bg-red-100 border-red-400">
-          <AlertCircle className="h-4 w-4 text-red-600" />
+        <Alert variant="destructive" className="bg-red-100 border-red-400" role="alert">
+          <AlertCircle className="h-4 w-4 text-red-600" aria-hidden="true" />
           <AlertTitle className="text-red-700">{error.title}</AlertTitle>
           <AlertDescription className="text-red-600">{error.message}</AlertDescription>
         </Alert>
@@ -600,12 +624,12 @@ export default function SQLExplorer() {
 
       {/* Results Modal */}
       <Dialog open={isResultsModalOpen} onOpenChange={setIsResultsModalOpen}>
-        <DialogContent className="max-w-[90vw] w-full max-h-[90vh] flex flex-col bg-white">
+        <DialogContent className="max-w-[95vw] sm:max-w-[90vw] w-full max-h-[90vh] flex flex-col bg-white">
           <DialogHeader>
-            <DialogTitle className="flex justify-between items-center text-2xl text-gray-800">
+            <DialogTitle className="flex justify-between items-center text-xl sm:text-2xl text-gray-800">
               Query Results
-              <Button variant="ghost" size="icon" onClick={() => setIsResultsModalOpen(false)}>
-                <X className="h-4 w-4" />
+              <Button variant="ghost" size="icon" onClick={() => setIsResultsModalOpen(false)} aria-label="Close results">
+                <X className="h-4 w-4" aria-hidden="true" />
               </Button>
             </DialogTitle>
           </DialogHeader>
@@ -652,7 +676,11 @@ export default function SQLExplorer() {
             )}
           </div>
           <div className="flex justify-center mt-4">
-            <Button onClick={exportToCSV} className="bg-black text-white hover:bg-blue-600 transition-colors duration-300">
+            <Button
+              onClick={exportToCSV}
+              className="bg-black text-white hover:bg-blue-600 hover:text-white transition-colors duration-300"
+              aria-label="Export results to CSV"
+            >
               Export to CSV
             </Button>
           </div>
@@ -660,13 +688,13 @@ export default function SQLExplorer() {
       </Dialog>
 
       {/* Chat with Database Section */}
-      <section className="space-y-4 mt-8 bg-gray-50 p-6 rounded-lg shadow-md">
+      <section className="space-y-4 mt-8 bg-gray-50 p-4 sm:p-6 rounded-lg shadow-md flex flex-col h-[calc(100vh-200px)]">
         <div className="flex items-center justify-center space-x-2">
-          <h2 className="text-2xl font-semibold text-center text-gray-800">Chat with the Database</h2>
+          <h2 className="text-xl sm:text-2xl font-semibold text-center text-gray-800">Chat with the Database</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-5 w-5 text-blue-500 cursor-help" />
+                <Info className="h-5 w-5 text-blue-500 cursor-help" aria-label="Information about chatting with the database" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs">
@@ -678,33 +706,39 @@ export default function SQLExplorer() {
             </Tooltip>
           </TooltipProvider>
         </div>
-        <ScrollArea className="h-[400px] w-full border rounded-md p-4 bg-white">
+        <ScrollArea className="flex-grow mb-4" ref={chatContainerRef}>
           {chatMessages.map((message, index) => (
             <div
               key={index}
               className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
             >
-              <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-purple-100'}`}>
+              <div
+                className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-purple-100'}`}
+                role="log"
+                aria-label={`${message.role} message`}
+              >
                 {message.content}
               </div>
             </div>
           ))}
         </ScrollArea>
-        <div className="flex space-x-2 items-stretch">
+        <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 items-stretch">
           <Textarea
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="Ask a question about the database..."
             className="flex-grow border-2 border-blue-600 focus:border-blue-800 transition-colors duration-300"
+            aria-label="Enter your question for the database chat"
           />
           <Button
             onClick={handleChatSubmit}
             disabled={isChatLoading}
-            className="bg-black text-white hover:bg-blue-600 transition-colors duration-300 flex-shrink-0 px-6 py-2 text-lg"
+            className="bg-black text-white hover:bg-blue-600 hover:text-white transition-colors duration-300 flex-shrink-0 px-6 py-2 text-lg"
+            aria-label="Send chat message"
           >
             {isChatLoading ? (
               <>
-                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" aria-hidden="true" />
                 Thinking...
               </>
             ) : (
