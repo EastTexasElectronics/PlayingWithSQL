@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, AlertCircle, ChevronLeft, ChevronRight, Info, X } from "lucide-react"
+import { Loader2, AlertCircle, ChevronLeft, ChevronRight, Info, X, Github } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format, isValid, parseISO } from 'date-fns'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
@@ -288,9 +288,21 @@ export default function SQLExplorer() {
 
   return (
     <div className="container mx-auto p-4 space-y-8 max-w-4xl bg-white rounded-lg shadow-lg">
-      <h1 className="text-3xl sm:text-4xl font-bold mb-6 text-center text-blue-800">
-        Robert&apos;s SQL Playground
-      </h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl sm:text-4xl font-bold text-blue-800">
+          Robert&apos;s SQL Playground
+        </h1>
+        <a
+          href="https://github.com/EastTexasElectronics/PlayingWithSQL"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center px-4 py-2 bg-black text-white rounded-md hover:bg-blue-600 transition-colors duration-300"
+          aria-label="View project on GitHub"
+        >
+          <Github className="mr-2 h-5 w-5" />
+          GitHub
+        </a>
+      </div>
 
       {/* Example Queries Section */}
       <section className="space-y-4 bg-gray-50 p-4 sm:p-6 rounded-lg shadow-md">
