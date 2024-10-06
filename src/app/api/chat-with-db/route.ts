@@ -33,7 +33,7 @@ export async function POST(request: Request) {
     ];
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-2024-08-06",
       messages: messages as OpenAI.Chat.ChatCompletionMessageParam[]
     });
 

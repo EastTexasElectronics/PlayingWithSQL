@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 'use client'
 
 import { useState } from 'react'
@@ -8,13 +5,12 @@ import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
-import { Loader2, AlertCircle, ChevronLeft, ChevronRight, Info } from "lucide-react"
+import { Loader2, AlertCircle, ChevronLeft, ChevronRight, Info, X } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { format, isValid, parseISO } from 'date-fns'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { X } from "lucide-react"
 
 type ColumnDef = {
   name: string
@@ -36,6 +32,11 @@ type ApiResponse = {
   rows: Record<string, unknown>[];
   error?: string;
 };
+
+interface GenerateQueryResponse {
+  error?: string;
+  query: string;
+}
 
 // Queries made by Robert
 const predefinedQueries = [
@@ -66,6 +67,7 @@ FROM Users
 SELECT name, price
 FROM Products
 ORDER BY price DESC
+LIMIT 5
     `.trim()
   },
   {
@@ -78,13 +80,16 @@ ORDER BY o.order_date DESC
     `.trim()
   },
   {
-    name: 'Product Categories',
+    name: 'Product Categories with Products',
     query: `
-SELECT name, COUNT(*) AS product_count
-FROM Categories
-JOIN Products ON Categories.category_id = Products.category_id
-GROUP BY Categories.category_id, Categories.name
-ORDER BY product_count DESC
+SELECT
+  c.name AS category_name,
+  COUNT(DISTINCT p.product_id) AS product_count,
+  STRING_AGG(DISTINCT p.name, ', ') AS products
+FROM Categories c
+LEFT JOIN Products p ON c.category_id = p.category_id
+GROUP BY c.name
+ORDER BY product_count DESC, c.name
     `.trim()
   },
   {
@@ -118,9 +123,9 @@ ORDER BY i.quantity ASC
   {
     name: 'Top Rated Products',
     query: `
-SELECT p.name, AVG(r.rating) AS avg_rating, COUNT(r.review_id) AS review_count
+SELECT p.name, COALESCE(AVG(r.rating), 0) AS avg_rating, COUNT(r.review_id) AS review_count
 FROM Products p
-JOIN Reviews r ON p.product_id = r.product_id
+LEFT JOIN Reviews r ON p.product_id = r.product_id
 GROUP BY p.product_id, p.name
 HAVING COUNT(r.review_id) > 5
 ORDER BY avg_rating DESC
@@ -174,7 +179,7 @@ ORDER BY total_spend DESC
   {
     name: 'Products Never Ordered',
     query: `
-SELECT p.name
+SELECT DISTINCT p.name
 FROM Products p
 LEFT JOIN OrderItems oi ON p.product_id = oi.product_id
 WHERE oi.order_item_id IS NULL
@@ -209,17 +214,6 @@ FROM Orders o
 JOIN Users u ON o.user_id = u.id
 JOIN Payments p ON o.order_id = p.order_id
 WHERE p.payment_status != 'Completed'
-ORDER BY o.order_date DESC
-    `.trim()
-  },
-  {
-    name: 'Product Price History',
-    query: `
-SELECT p.name, oi.price, o.order_date
-FROM Products p
-JOIN OrderItems oi ON p.product_id = oi.product_id
-JOIN Orders o ON oi.order_id = o.order_id
-WHERE p.product_id = 1  -- Replace with desired product_id
 ORDER BY o.order_date DESC
     `.trim()
   },
@@ -260,6 +254,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }: {
         disabled={currentPage === 1}
         variant="outline"
         size="sm"
+        className="bg-black text-white hover:bg-blue-600 transition-colors duration-300"
       >
         <ChevronLeft className="h-4 w-4 mr-2" />
         Previous
@@ -272,6 +267,7 @@ const Pagination = ({ totalItems, itemsPerPage, currentPage, onPageChange }: {
         disabled={currentPage === totalPages}
         variant="outline"
         size="sm"
+        className="bg-black text-white hover:bg-blue-600 transition-colors duration-300"
       >
         Next
         <ChevronRight className="h-4 w-4 ml-2" />
@@ -369,7 +365,7 @@ export default function SQLExplorer() {
 
     if (typeof value === 'string') {
       const date = parseISO(value);
-      if (date instanceof Date && isValid(date)) {
+      if (isValid(date)) {
         return format(date, 'MM/dd/yy HH:mm:ss');
       }
       return value;
@@ -388,11 +384,11 @@ export default function SQLExplorer() {
         },
         body: JSON.stringify({ question: userQuestion }),
       });
-      const result = await response.json();
+      const result = await response.json() as GenerateQueryResponse;
       if (!response.ok) {
-        throw new Error((result as { error?: string }).error ?? 'An unknown error occurred');
+        throw new Error(result.error ?? 'An unknown error occurred');
       }
-      setUserQuery((result as { query: string }).query);
+      setUserQuery(result.query);
     } catch (err) {
       setError({
         title: 'Query Generation Error',
@@ -449,8 +445,8 @@ export default function SQLExplorer() {
         throw new Error('Failed to get response from chat API');
       }
 
-      const result = await response.json();
-      const formattedResponse = formatChatResponse((result as { response: string }).response);
+      const result = await response.json() as { response: string };
+      const formattedResponse = formatChatResponse(result.response);
       setChatMessages([...newMessages, { role: 'assistant' as const, content: formattedResponse }]);
     } catch (err) {
       console.error('Error in chat:', err);
@@ -467,10 +463,14 @@ export default function SQLExplorer() {
     response = response.replace(/\[SQL\]([\s\S]*?)\[\/SQL\]/g, 'I used the following SQL query:');
 
     response = response.replace(/(\{[\s\S]*?\})/g, (match) => {
-      const obj: Record<string, unknown> = JSON.parse(match);
-      return Object.entries(obj)
-        .map(([key, value]) => `${key}: ${String(value)}`)
-        .join(', ');
+      try {
+        const obj = JSON.parse(match) as Record<string, unknown>;
+        return Object.entries(obj)
+          .map(([key, value]) => `${key}: ${String(value)}`)
+          .join(', ');
+      } catch {
+        return match; // Return the original match if parsing fails
+      }
     });
 
     response = response.replace(/\. /g, '.\n');
@@ -479,11 +479,14 @@ export default function SQLExplorer() {
   };
 
   return (
-    <div className="container mx-auto p-4 space-y-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6 text-center">Robert$apos;s SQL Playground</h1>
+    <div className="container mx-auto p-4 space-y-8 max-w-4xl bg-white rounded-lg shadow-lg">
+      <h1 className="text-4xl font-bold mb-6 text-center text-blue-800">
+        Robert&apos;s SQL Playground
+      </h1>
 
-      <section className="space-y-4">
-        <h2 className="text-2xl font-semibold text-center">Robert$apos;s Example Queries</h2>
+      {/* Example Queries Section */}
+      <section className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md">
+        <h2 className="text-2xl font-semibold text-center text-gray-800">Robert&apos;s Example Queries</h2>
         <div className="flex flex-wrap justify-center gap-2">
           {predefinedQueries.map((pq, index) => (
             <TooltipProvider key={index}>
@@ -492,7 +495,7 @@ export default function SQLExplorer() {
                   <Button
                     onClick={() => setUserQuery(formatSQL(pq.query))}
                     variant="outline"
-                    className="text-sm"
+                    className="text-sm bg-black text-white hover:bg-blue-600 transition-colors duration-300"
                   >
                     {pq.name}
                   </Button>
@@ -506,13 +509,14 @@ export default function SQLExplorer() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      {/* Natural Language Query Section */}
+      <section className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-center space-x-2">
-          <h2 className="text-2xl font-semibold">Generate an SQL Query from a Natural Language Question</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Generate an SQL Query from a Natural Language Question</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-5 w-5 text-muted-foreground cursor-help" />
+                <Info className="h-5 w-5 text-blue-500 cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs">
@@ -529,10 +533,10 @@ export default function SQLExplorer() {
             value={userQuestion}
             onChange={(e) => setUserQuestion(e.target.value)}
             placeholder="Ask a question about the database..."
-            className="min-h-[100px] w-full"
+            className="min-h-[100px] w-full border-2 border-blue-200 focus:border-blue-400 transition-colors duration-300"
           />
           <div className="flex justify-center">
-            <Button onClick={generateQueryFromQuestion} disabled={isGeneratingQuery}>
+            <Button onClick={generateQueryFromQuestion} disabled={isGeneratingQuery} className="bg-black text-white hover:bg-blue-600 transition-colors duration-300">
               {isGeneratingQuery ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -546,17 +550,18 @@ export default function SQLExplorer() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      {/* SQL Query Execution Section */}
+      <section className="space-y-4 bg-gray-50 p-6 rounded-lg shadow-md">
         <div className="flex items-center justify-center space-x-2">
-          <h2 className="text-2xl font-semibold">Execute an SQL Query</h2>
+          <h2 className="text-2xl font-semibold text-gray-800">Execute an SQL Query</h2>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Info className="h-5 w-5 text-muted-foreground cursor-help" />
+                <Info className="h-5 w-5 text-blue-500 cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
                 <p className="max-w-xs">
-                  Enter your SQL query here. You can write your own query or use the generated query from the Natural Language section above or one of Robert$apos;s example queries at the top of this page.
+                  Enter your SQL query here. You can write your own query or use the generated query from the Natural Language section above or one of Robert&apos;s example queries at the top of this page.
                 </p>
               </TooltipContent>
             </Tooltip>
@@ -567,10 +572,10 @@ export default function SQLExplorer() {
             value={userQuery}
             onChange={(e) => setUserQuery(e.target.value)}
             placeholder="Enter your SQL query here..."
-            className="min-h-[100px] w-full font-mono"
+            className="min-h-[100px] w-full font-mono border-2 border-blue-200 focus:border-blue-400 transition-colors duration-300"
           />
           <div className="flex justify-center">
-            <Button onClick={executeQuery} disabled={isLoading}>
+            <Button onClick={executeQuery} disabled={isLoading} className="bg-black text-white hover:bg-blue-600 transition-colors duration-300">
               {isLoading ? (
                 <>
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -584,18 +589,20 @@ export default function SQLExplorer() {
         </div>
       </section>
 
+      {/* Error Alert */}
       {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>{error.title}</AlertTitle>
-          <AlertDescription>{error.message}</AlertDescription>
+        <Alert variant="destructive" className="bg-red-100 border-red-400">
+          <AlertCircle className="h-4 w-4 text-red-600" />
+          <AlertTitle className="text-red-700">{error.title}</AlertTitle>
+          <AlertDescription className="text-red-600">{error.message}</AlertDescription>
         </Alert>
       )}
 
+      {/* Results Modal */}
       <Dialog open={isResultsModalOpen} onOpenChange={setIsResultsModalOpen}>
-        <DialogContent className="max-w-[90vw] w-full max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-[90vw] w-full max-h-[90vh] flex flex-col bg-white">
           <DialogHeader>
-            <DialogTitle className="flex justify-between items-center">
+            <DialogTitle className="flex justify-between items-center text-2xl text-gray-800">
               Query Results
               <Button variant="ghost" size="icon" onClick={() => setIsResultsModalOpen(false)}>
                 <X className="h-4 w-4" />
@@ -605,12 +612,12 @@ export default function SQLExplorer() {
           <div className="flex-grow overflow-auto">
             {results && (
               <div className="space-y-4">
-                <div className="border rounded-lg overflow-x-auto">
+                <div className="border rounded-lg overflow-x-auto bg-white shadow-inner">
                   <Table>
                     <TableHeader>
                       <TableRow>
                         {results.columns.map((column, index) => (
-                          <TableHead key={index} className="font-bold">
+                          <TableHead key={index} className="font-bold text-blue-600">
                             {column.name}
                           </TableHead>
                         ))}
@@ -618,7 +625,7 @@ export default function SQLExplorer() {
                     </TableHeader>
                     <TableBody>
                       {results.rows.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage).map((row, rowIndex) => (
-                        <TableRow key={rowIndex}>
+                        <TableRow key={rowIndex} className="hover:bg-gray-50 transition-colors duration-200">
                           {results.columns.map((column, colIndex) => (
                             <TableCell
                               key={colIndex}
@@ -644,36 +651,60 @@ export default function SQLExplorer() {
               </div>
             )}
           </div>
-          <div className="flex justify-center mt-4 space-x-4">
-            <Button onClick={exportToCSV}>
+          <div className="flex justify-center mt-4">
+            <Button onClick={exportToCSV} className="bg-black text-white hover:bg-blue-600 transition-colors duration-300">
               Export to CSV
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-{/* TODO: add info icon with tooltip that explains how to use this section  */}
-      <section className="space-y-4 mt-8">
-        <h2 className="text-2xl font-semibold text-center">Chat with the Database</h2>
-        <ScrollArea className="h-[400px] w-full border rounded-md p-4">
+
+      {/* Chat with Database Section */}
+      <section className="space-y-4 mt-8 bg-gray-50 p-6 rounded-lg shadow-md">
+        <div className="flex items-center justify-center space-x-2">
+          <h2 className="text-2xl font-semibold text-center text-gray-800">Chat with the Database</h2>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Info className="h-5 w-5 text-blue-500 cursor-help" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p className="max-w-xs">
+                  Ask questions about the database in natural language. The AI will interpret your question,
+                  generate and execute SQL queries, and provide you with the results. You can have a
+                  conversation about the data, ask for clarifications, or request more detailed information.
+                </p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        <ScrollArea className="h-[400px] w-full border rounded-md p-4 bg-white">
           {chatMessages.map((message, index) => (
-            <div key={index} className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}>
-              <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-gray-100'}`}>
+            <div
+              key={index}
+              className={`mb-4 ${message.role === 'user' ? 'text-right' : 'text-left'}`}
+            >
+              <div className={`inline-block p-2 rounded-lg ${message.role === 'user' ? 'bg-blue-100' : 'bg-purple-100'}`}>
                 {message.content}
               </div>
             </div>
           ))}
         </ScrollArea>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 items-stretch">
           <Textarea
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             placeholder="Ask a question about the database..."
-            className="flex-grow"
+            className="flex-grow border-2 border-blue-600 focus:border-blue-800 transition-colors duration-300"
           />
-          <Button onClick={handleChatSubmit} disabled={isChatLoading}>
+          <Button
+            onClick={handleChatSubmit}
+            disabled={isChatLoading}
+            className="bg-black text-white hover:bg-blue-600 transition-colors duration-300 flex-shrink-0 px-6 py-2 text-lg"
+          >
             {isChatLoading ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                 Thinking...
               </>
             ) : (

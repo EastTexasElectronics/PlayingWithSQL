@@ -1,0 +1,101 @@
+category_name,product_count,products
+"Electronics","5","Banana, Orange, Watermelon, Pineapple, Blueberry"
+"Books","4","Pineapple, Strawberry, Watermelon, Strawberry"
+"Furniture","3","Grapes, Orange, Strawberry"
+"Health","3","Mango, Blueberry, Mango"
+"Furniture","3","Apple, Blueberry, Watermelon"
+"Furniture","3","Grapes, Orange, Orange"
+"Clothing","3","Blueberry, Strawberry, Orange"
+"Toys","3","Pineapple, Mango, Blueberry"
+"Automotive","3","Raspberry, Mango, Strawberry"
+"Electronics","3","Grapes, Blueberry, Apple"
+"Electronics","3","Grapes, Raspberry, Banana"
+"Sports","3","Grapes, Grapes, Blueberry"
+"Electronics","2","Banana, Raspberry"
+"Toys","2","Orange, Watermelon"
+"Clothing","2","Grapes, Apple"
+"Automotive","2","Blueberry, Blueberry"
+"Furniture","2","Grapes, Raspberry"
+"Food","2","Mango, Blueberry"
+"Sports","2","Pineapple, Banana"
+"Clothing","2","Strawberry, Banana"
+"Electronics","2","Orange, Pineapple"
+"Beauty","2","Blueberry, Watermelon"
+"Electronics","2","Apple, Mango"
+"Furniture","2","Pineapple, Banana"
+"Beauty","2","Strawberry, Grapes"
+"Books","2","Grapes, Blueberry"
+"Electronics","2","Mango, Mango"
+"Toys","1","Apple"
+"Automotive","1","Orange"
+"Books","1","Grapes"
+"Electronics","1","Raspberry"
+"Electronics","1","Blueberry"
+"Books","1","Raspberry"
+"Toys","1","Watermelon"
+"Books","1","Banana"
+"Books","1","Blueberry"
+"Toys","1","Pineapple"
+"Food","1","Orange"
+"Books","1","Blueberry"
+"Sports","1","Blueberry"
+"Books","1","Blueberry"
+"Clothing","1","Strawberry"
+"Automotive","1","Grapes"
+"Electronics","1","Grapes"
+"Furniture","1","Pineapple"
+"Toys","1","Apple"
+"Books","1","Watermelon"
+"Beauty","1","Apple"
+"Food","1","Orange"
+"Health","1","Apple"
+"Sports","1","Raspberry"
+"Electronics","1","Strawberry"
+"Food","1","Pineapple"
+"Books","1","Banana"
+"Automotive","1","Blueberry"
+"Toys","1","Watermelon"
+"Sports","1","Grapes"
+"Clothing","1","Raspberry"
+"Automotive","0",
+"Health","0",
+"Books","0",
+"Furniture","0",
+"Health","0",
+"Electronics","0",
+"Books","0",
+"Clothing","0",
+"Clothing","0",
+"Furniture","0",
+"Food","0",
+"Toys","0",
+"Furniture","0",
+"Automotive","0",
+"Automotive","0",
+"Clothing","0",
+"Automotive","0",
+"Clothing","0",
+"Beauty","0",
+"Clothing","0",
+"Food","0",
+"Automotive","0",
+"Health","0",
+"Books","0",
+"Beauty","0",
+"Sports","0",
+"Furniture","0",
+"Food","0",
+"Clothing","0",
+"Beauty","0",
+"Electronics","0",
+"Toys","0",
+"Sports","0",
+"Beauty","0",
+"Clothing","0",
+"Books","0",
+"Beauty","0",
+"Furniture","0",
+"Furniture","0",
+"Sports","0",
+"Furniture","0",
+"Food","0",

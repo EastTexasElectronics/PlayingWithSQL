@@ -22,14 +22,16 @@ export async function POST(request: Request) {
     const { question } = await request.json() as { question: string };
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-2024-08-06",
       messages: [
-        { role: "system", content: `You are a helpful assistant that generates SQL queries based on user questions. Use the following schema:\n${schema}\nOnly respond with the SQL query, no other text or code formatting.` },
+        { role: "system", content: `You are a helpful assistant that generates SQL queries based on user questions. Use the following schema:\n${schema}\nRespond with only the SQL query, without any code formatting or additional text.` },
         { role: "user", content: question }
       ],
     });
 
-    const query = completion.choices[0]?.message.content?.trim() ?? '';
+    let query = completion.choices[0]?.message.content?.trim() ?? '';
+
+    query = query.replace(/^```sql\n?/, '').replace(/\n?```$/, '');
 
     return NextResponse.json({ query });
   } catch (error) {
