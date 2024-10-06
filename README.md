@@ -1,29 +1,112 @@
-# Create T3 App
+# SQL Playground
 
-This is a [T3 Stack](https://create.t3.gg/) project bootstrapped with `create-t3-app`.
+SQL Playground is an interactive web application that allows users to explore and query a database using SQL. It features a natural language query generator, predefined queries, and a chat interface for database interactions.
 
-## What's next? How do I make an app with this?
+## Features
 
-We try to keep this project as simple as possible, so you can start with just the scaffolding we set up for you, and add additional things later when they become necessary.
+- Execute custom SQL queries
+- Generate SQL queries from natural language questions
+- Predefined example queries
+- Chat interface for database interactions
+- Export query results to CSV
+- Responsive design for desktop and mobile use
 
-If you are not familiar with the different technologies used in this project, please refer to the respective docs. If you still are in the wind, please join our [Discord](https://t3.gg/discord) and ask for help.
+## Prerequisites
 
-- [Next.js](https://nextjs.org)
-- [NextAuth.js](https://next-auth.js.org)
-- [Prisma](https://prisma.io)
-- [Drizzle](https://orm.drizzle.team)
-- [Tailwind CSS](https://tailwindcss.com)
-- [tRPC](https://trpc.io)
+Before you begin, ensure you have the following installed:
 
-## Learn More
+- Node.js (v14 or later)
+- npm or Yarn or Bun
+- PostgreSQL database
 
-To learn more about the [T3 Stack](https://create.t3.gg/), take a look at the following resources:
+## Installation
 
-- [Documentation](https://create.t3.gg/)
-- [Learn the T3 Stack](https://create.t3.gg/en/faq#what-learning-resources-are-currently-available) — Check out these awesome tutorials
+1. Clone the repository:
 
-You can check out the [create-t3-app GitHub repository](https://github.com/t3-oss/create-t3-app) — your feedback and contributions are welcome!
+   ```bash
+   git clone https://github.com/your-username/sql-playground.git
+   cd sql-playground
+   ```
 
-## How do I deploy this?
+2. Install dependencies:
 
-Follow our deployment guides for [Vercel](https://create.t3.gg/en/deployment/vercel), [Netlify](https://create.t3.gg/en/deployment/netlify) and [Docker](https://create.t3.gg/en/deployment/docker) for more information.
+   ```bash
+   npm install
+   # or
+   yarn install
+   # or
+   bun install
+   ```
+
+3. Set up environment variables:
+   Create a `.env` file in the root directory and add the following variables:
+
+   ```bash
+   POSTGRES_URL=your_postgres_connection_string
+   OPENAI_API_KEY=your_openai_api_key
+   ```
+
+   Replace `your_postgres_connection_string` with your actual PostgreSQL connection string and `your_openai_api_key` with your OpenAI API key.
+
+4. Set up the database:
+   Run the following command to set up the database schema:
+
+   ```bash
+   npm run db:setup
+   # or
+   yarn db:setup
+   # or
+   bun run db:setup
+   ```
+
+5. (Optional) Insert sample data:
+   If you want to populate the database with sample data, run:
+
+   ```bash
+   npm run src/database/sampleData/insertCsvData.js
+   # or
+   yarn run src/database/sampleData/insertCsvData.js
+   # or
+   bun run src/database/sampleData/insertCsvData.js
+   ```
+
+## Usage
+
+1. Start the development server:
+
+   ```bash
+   npm run dev
+   # or
+   yarn dev
+   # or
+   bun dev
+   ```
+
+2. Open your browser and navigate to `http://localhost:3000`
+
+3. Use the SQL Playground interface to:
+   - Write and execute custom SQL queries
+   - Generate SQL queries from natural language questions
+   - Use predefined example queries
+   - Chat with the database using natural language
+   - View and export query results
+
+## Project Structure
+
+- `src/app`: Next.js app router and API routes
+- `src/components`: React components including the main SQL Explorer
+- `src/database`: Database setup, schema, and utility functions
+- `src/styles`: Global CSS styles
+- `src/lib`: Utility functions
+- `public`: Static assets
+
+## Key Components
+
+- `src/components/sql-explorer.tsx`: Main component for SQL query execution and result display
+- `src/app/api/database/route.ts`: API route for executing SQL queries
+- `src/app/api/generate-query/route.ts`: API route for generating SQL queries from natural language
+- `src/app/api/chat-with-db/route.ts`: API route for chat interactions with the database
+
+## Database Schema
+
+The project uses the following database schema:
